@@ -1,37 +1,24 @@
-version: "3.8"
-
 services:
   localstack:
-    container_name: localstack-main
-    image: localstack/localstack:latest
-
+    container_name: "${LOCALSTACK_DOCKER_NAME:-localstack-main}"
+    image: localstack/localstack-pro  # required for Pro
     ports:
-      - "4566:4566" # LocalStack edge port
+      - "127.0.0.1:4566:4566"            # LocalStack Gateway
+      - "127.0.0.1:4510-4559:4510-4559"  # external services port range
+      - "127.0.0.1:443:443"              # LocalStack HTTPS Gateway (Pro)
 
-    # Load variables from ./\.env (same folder as this compose file)
-    # This makes ${LOCALSTACK_AUTH_TOKEN} available for substitution below.
+    # Load LOCALSTACK_AUTH_TOKEN (and other vars) from ./.env
     env_file:
       - .env
 
     environment:
-      # Activate Pro (token comes from .env; empty if not set)
-      - LOCALSTACK_AUTH_TOKEN=${LOCALSTACK_AUTH_TOKEN:-}
+      # Activate LocalStack Pro
+      - LOCALSTACK_AUTH_TOKEN=${LOCALSTACK_AUTH_TOKEN:?}  # required for Pro
 
-      # Region CDK expects
-      - AWS_DEFAULT_REGION=us-east-1
-
-      # Services your stack uses
-      - SERVICES=s3,lambda,cloudformation,iam,sts,logs,events,sqs,ssm
-
-      # Required for Lambda execution (LocalStack spins up docker to run lambdas)
-      - DOCKER_HOST=unix:///var/run/docker.sock
-
-      # Helpful debugging (optional)
-      - DEBUG=1
+      # LocalStack config
+      - DEBUG=${DEBUG:-0}
+      - PERSISTENCE=${PERSISTENCE:-0}
 
     volumes:
-      - /var/run/docker.sock:/var/run/docker.sock
-      - localstack-data:/var/lib/localstack
-
-volumes:
-  localstack-data:
+      - "${LOCALSTACK_VOLUME_DIR:-./volume}:/var/lib/localstack"
+      - "/var/run/docker.sock:/var/run/docker.sock"
