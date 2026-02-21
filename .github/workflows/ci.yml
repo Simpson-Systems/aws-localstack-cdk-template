@@ -29,13 +29,10 @@ jobs:
         working-directory: cdk
         run: npm run synth
 
-  # Optional: real integration check using LocalStack
   localstack_integration:
-    # Keep PRs fast: only run this after merge to main
     if: github.ref == 'refs/heads/main'
     needs: build_synth
     runs-on: ubuntu-latest
-
     steps:
       - uses: actions/checkout@v4
 
@@ -45,12 +42,15 @@ jobs:
           cache: npm
           cache-dependency-path: cdk/package-lock.json
 
-      - name: Start LocalStack
+      - name: Start LocalStack (Pro)
         uses: localstack/setup-localstack@v1
         with:
-          image-tag: latest
+          image-tag: "latest"
+          install-awslocal: "true"
+        env:
+          LOCALSTACK_AUTH_TOKEN: ${{ secrets.LOCALSTACK_AUTH_TOKEN }}
 
-      - name: Set AWS env (dummy creds for LocalStack)
+      - name: Set fake AWS credentials
         run: |
           echo "AWS_ACCESS_KEY_ID=test" >> $GITHUB_ENV
           echo "AWS_SECRET_ACCESS_KEY=test" >> $GITHUB_ENV
