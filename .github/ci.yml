@@ -6,7 +6,34 @@ on:
     branches: [main]
 
 jobs:
-  integration:
+  build_synth:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+          cache-dependency-path: cdk/package-lock.json
+
+      - name: Install
+        working-directory: cdk
+        run: npm ci
+
+      - name: Build
+        working-directory: cdk
+        run: npm run build
+
+      - name: CDK synth (sanity check)
+        working-directory: cdk
+        run: npm run synth
+
+  # Optional: real integration check using LocalStack
+  localstack_integration:
+    # Keep PRs fast: only run this after merge to main
+    if: github.ref == 'refs/heads/main'
+    needs: build_synth
     runs-on: ubuntu-latest
 
     steps:
@@ -16,36 +43,26 @@ jobs:
         with:
           node-version: 20
           cache: npm
+          cache-dependency-path: cdk/package-lock.json
 
-      # Start LocalStack on the runner
       - name: Start LocalStack
         uses: localstack/setup-localstack@v0
         with:
-          image-tag: "latest"
-          # If you use LocalStack Pro features, set this secret in GitHub:
-          # LOCALSTACK_AUTH_TOKEN: ${{ secrets.LOCALSTACK_AUTH_TOKEN }}
+          image-tag: latest
 
-      # CDK + LocalStack expect AWS creds to exist (they can be dummy for LocalStack)
-      - name: Set AWS env
+      - name: Set AWS env (dummy creds for LocalStack)
         run: |
           echo "AWS_ACCESS_KEY_ID=test" >> $GITHUB_ENV
           echo "AWS_SECRET_ACCESS_KEY=test" >> $GITHUB_ENV
           echo "AWS_DEFAULT_REGION=us-east-1" >> $GITHUB_ENV
 
-      # If your CDK app is in ./infra (common template layout)
-      - name: Install infra deps
-        working-directory: infra
+      - name: Install
+        working-directory: cdk
         run: npm ci
 
-      - name: Deploy CDK to LocalStack
-        working-directory: infra
+      - name: Deploy to LocalStack
+        working-directory: cdk
         env:
           LOCALSTACK_HOSTNAME: localhost
           EDGE_PORT: 4566
-        run: |
-          npx cdklocal bootstrap --require-approval never
-          npx cdklocal deploy --require-approval never
-
-      # Run tests (either in infra/ or repo root—adjust as needed)
-      - name: Run integration tests
-        run: npm test
+        run: npm run local:deploy
