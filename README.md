@@ -1,77 +1,310 @@
-# AWS S3 to AWS EventBridge to AWS Lambda
+# Contributing Guide
 
-This pattern contains a sample AWS Cloud Development Kit (AWS CDK) template for creating an AWS S3 bucket with AWS EventBridge notifications turned on. All S3 events in this bucket is sent to AWS EventBridge. This CDK template also deploys a AWS Lambda function which will process the event sent to AWS EventBridge and create a tag for the S3 object that was created. An AWS EventBridge rule is also created to send only the `Object Created` event of the bucket to the Lambda function.
+Welcome!
+This repository uses a **local cloud development workflow**.
+All development happens against a locally emulated AWS environment powered by LocalStack.
 
-Learn more about this pattern at Serverless Land Patterns:: https://serverlessland.com/patterns/s3-eventbridge-lambda
+We do **not** develop directly in AWS.
 
-Important: This template uses various AWS services and there are costs associated with these services after the Free Tier usage - please see the [AWS Pricing page](https://aws.amazon.com/pricing/) for details. You are responsible for any AWS osts incurred. No warranty is implied in this example.
+The purpose of this process is:
 
-## Requirements
+* every change is traceable
+* every change is tested
+* every change is reviewable
+* the environment is reproducible
 
-- [Create an AWS account](https://portal.aws.amazon.com/gp/aws/developer/registration/index.html) if you do not already have one and log in. The IAM user that you use must have sufficient permissions to make necessary AWS service calls and manage AWS resources.
-- [AWS CLI](https://docs.aws.amazon.com/cli/latest/userguide/install-cliv2.html) installed and configured
-- [Git Installed](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git)
-- [AWS CDK](https://docs.aws.amazon.com/cdk/latest/guide/cli.html) installed and configured
+---
 
-## Deployment Instructions
+# Core Principles
 
-1. Create a new directory, navigate to that directory in a terminal and clone the GitHub repository:
-   ```bash
-   git clone https://github.com/aws-samples/serverless-patterns
-   ```
-2. Change directory to the pattern directory:
-   ```bash
-   cd serverless-patterns/s3-eventbridge-lambda-cdk/cdk
-   ```
-3. Install dependencies:
-   ```bash
-   npm install
-   ```
-4. From the command line, configure AWS CDK:
-   ```bash
-   cdk bootstrap ACCOUNT-NUMBER/REGION # e.g.
-   cdk bootstrap 1111111111/us-east-1
-   cdk bootstrap --profile test 1111111111/us-east-1
-   ```
-5. From the command line, use AWS CDK to deploy the AWS resources for the pattern as specified in the `stack/s3-eventbridge-lambda-stack.ts`
-   ```bash
-   cdk deploy
-   ```
-6. The CDK template successfully creates a new S3 bucket, a lambda function `s3-event-processor` and an EventBridge rule targeting the lambda function for the `Object Created` event.
+1. Infrastructure is part of the codebase.
+2. Every change must be tied to an issue.
+3. No direct commits to `main`.
+4. All work goes through Pull Requests.
+5. Features are tested locally before review.
 
-7. Note the outputs from the CDK deployment process. This contains the S3 bucket name. 
+---
 
-## How it works
+# Required Setup
 
-- Upload a file to the newly created S3 bucket
-- This will send an `Object Created` event to EventBridge
-- Based on the EventBridge rule, the lambda funtion is executed by passing the `Object Created` event
-- The lambda function processes that event and tags the object that was created in the bucket
+Before contributing, you must be able to run the local cloud.
 
-## Testing
+Follow `README.md` and confirm:
 
-1. Navidate to AWS console and go to the S3 bucket that was created by this CDK template
+You can open:
 
-2. Upload a file to the S3 bucket
+```
+https://app.localstack.cloud/inst/default/state
+```
 
-3. Immediately after the upload is completed successfully, navigate to the object in the S3 bucket and check the tags. You will see a tag as shown in the image below
+and see deployed resources.
 
-    <img src="./docs/01-sample-file-tags.png" alt="example-tags" width="80%"/>
+If you cannot deploy the stack locally, you are not ready to open a PR yet.
 
-## Cleanup
+---
 
-1. Delete the stack
-   ```bash
-   cdk destroy
-   ```
+# Development Workflow (GitHub Flow)
 
-2. Navigate to CloudWatch and deleted any log groups created by the `s3-event-processor` lambda function
+We use a strict feature branch workflow.
 
-## Documentation and useful references
-- [AWS S3 Event Notifications with EventBridge](https://aws.amazon.com/blogs/aws/new-use-amazon-s3-event-notifications-with-amazon-eventbridge/)
-- [Using EventBridge with S3](https://docs.aws.amazon.com/AmazonS3/latest/userguide/EventBridge.html)
+## Step 1 — Create an Issue
 
-----
-Copyright 2022 Amazon.com, Inc. or its affiliates. All Rights Reserved.
+Every change starts with an issue.
 
-SPDX-License-Identifier: MIT-0
+Examples:
+
+* bug
+* feature
+* refactor
+* infrastructure change
+
+The issue explains:
+
+* what problem exists
+* or what behavior should be added
+
+---
+
+## Step 2 — Create a Branch
+
+Branch names must include the issue number.
+
+Format:
+
+```
+<type>/<issue-number>-<short-description>
+```
+
+Examples:
+
+```
+feat/42-s3-upload-handler
+fix/18-step-function-timeout
+refactor/73-lambda-structure
+infra/11-add-dead-letter-queue
+```
+
+---
+
+## Step 3 — Sync and Start Work
+
+```
+git checkout main
+git pull
+git checkout -b feat/42-s3-upload-handler
+```
+
+---
+
+## Step 4 — Start the Local Cloud
+
+From the project root:
+
+```
+docker compose up
+```
+
+Then deploy infrastructure:
+
+```
+cdk deploy --all --require-approval never
+```
+
+Verify the system is running by opening:
+
+```
+https://app.localstack.cloud/inst/default/state
+```
+
+---
+
+## Step 5 — Implement and Test
+
+All work must be tested locally.
+
+Typical testing includes:
+
+* uploading files to S3
+* sending SQS messages
+* invoking lambdas
+* running Step Functions
+* verifying DB writes
+* checking logs
+
+You should be able to demonstrate the feature **without deploying to AWS**.
+
+---
+
+## Step 6 — Commit
+
+We use **Conventional Commits**.
+
+Format:
+
+```
+type(scope): short description
+```
+
+Examples:
+
+```
+feat(lambda): add invoice ingestion handler
+fix(queue): prevent duplicate processing
+refactor(stepfn): simplify workflow state transitions
+docs(readme): update local setup instructions
+```
+
+Allowed types:
+
+* feat
+* fix
+* docs
+* refactor
+* test
+* chore
+* ci
+* perf
+
+Commit often. Small commits are preferred.
+
+---
+
+## Step 7 — Open a Pull Request
+
+Push your branch:
+
+```
+git push -u origin feat/42-s3-upload-handler
+```
+
+Then open a Pull Request.
+
+The PR **must reference the issue**:
+
+```
+Closes #42
+```
+
+Your PR should explain:
+
+* what changed
+* how it works
+* how it was tested locally
+
+---
+
+# Pull Request Requirements
+
+A PR will only be merged if:
+
+* CI passes
+* branch is up to date
+* issue is referenced
+* the feature works in LocalStack
+
+---
+
+# Review Expectations
+
+Reviewers verify:
+
+1. Code quality
+2. Architecture
+3. Reproducibility
+4. Local behavior
+
+Reviewers should be able to:
+
+```
+git checkout your-branch
+docker compose up
+cdk deploy
+```
+
+and observe the feature working locally.
+
+---
+
+# What NOT To Do
+
+Do not:
+
+* commit directly to `main`
+* bypass Pull Requests
+* test only in AWS
+* open a PR without running LocalStack
+* merge your own PR without review
+
+---
+
+# Updating Your Branch
+
+Before requesting review:
+
+```
+git checkout main
+git pull
+git checkout your-branch
+git rebase main
+git push --force-with-lease
+```
+
+---
+
+# Debugging Tips
+
+View logs:
+
+```
+docker logs localstack-main -f
+```
+
+List resources:
+
+```
+awslocal cloudformation list-stacks
+```
+
+Invoke lambda:
+
+```
+awslocal lambda invoke --function-name <name> out.json
+```
+
+---
+
+# Why This Process Exists
+
+Cloud systems are difficult to debug after deployment.
+
+This workflow ensures:
+
+* faster iteration
+* fewer production issues
+* observable behavior
+* shared understanding
+
+We are building a **system**, not just writing code.
+
+LocalStack allows the entire backend to run on a developer machine, making infrastructure testable before deployment.
+
+---
+
+# When AWS Is Used
+
+AWS environments are only for:
+
+* staging validation
+* integration verification
+* production
+
+Daily development happens locally.
+
+---
+
+# Final Note
+
+If you can’t demonstrate your feature locally, it is not ready for review.
+
+The local environment is the source of truth for development.
+
