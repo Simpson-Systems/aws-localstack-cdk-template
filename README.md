@@ -5,7 +5,7 @@ This repository contains a fully local AWS backend environment powered by:
 - AWS CDK
 - LocalStack Pro
 - Docker
-
+- Orbstack
 It allows developers to run and debug the entire cloud system (Lambdas, queues, workflows, storage, and APIs) on their own machine without deploying to AWS.
 
 Start here:
