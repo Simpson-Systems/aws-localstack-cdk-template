@@ -1,0 +1,51 @@
+name: ci
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  integration:
+    runs-on: ubuntu-latest
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      # Start LocalStack on the runner
+      - name: Start LocalStack
+        uses: localstack/setup-localstack@v0
+        with:
+          image-tag: "latest"
+          # If you use LocalStack Pro features, set this secret in GitHub:
+          # LOCALSTACK_AUTH_TOKEN: ${{ secrets.LOCALSTACK_AUTH_TOKEN }}
+
+      # CDK + LocalStack expect AWS creds to exist (they can be dummy for LocalStack)
+      - name: Set AWS env
+        run: |
+          echo "AWS_ACCESS_KEY_ID=test" >> $GITHUB_ENV
+          echo "AWS_SECRET_ACCESS_KEY=test" >> $GITHUB_ENV
+          echo "AWS_DEFAULT_REGION=us-east-1" >> $GITHUB_ENV
+
+      # If your CDK app is in ./infra (common template layout)
+      - name: Install infra deps
+        working-directory: infra
+        run: npm ci
+
+      - name: Deploy CDK to LocalStack
+        working-directory: infra
+        env:
+          LOCALSTACK_HOSTNAME: localhost
+          EDGE_PORT: 4566
+        run: |
+          npx cdklocal bootstrap --require-approval never
+          npx cdklocal deploy --require-approval never
+
+      # Run tests (either in infra/ or repo root—adjust as needed)
+      - name: Run integration tests
+        run: npm test
