@@ -13,7 +13,7 @@
     "local:up": "docker compose up -d",
     "local:down": "docker compose down -v",
     "local:deploy": "npm run build && npm run bootstrap:local && npm run deploy:local"
-}
+},
   "devDependencies": {
     "aws-cdk-local": "^2.0.0"
     "@types/jest": "^26.0.10",
