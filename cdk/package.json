@@ -18,7 +18,8 @@
   "local:up": "docker compose -f ../docker-compose.yml up -d",
   "local:down": "docker compose -f ../docker-compose.yml down -v",
   "local:deploy": "npm run build && npm run bootstrap:local && npm run deploy:local",
-"local:all": "npm run local:up && AWS_ACCESS_KEY_ID=test AWS_SECRET_ACCESS_KEY=test AWS_DEFAULT_REGION=us-east-1 AWS_REGION=us-east-1 npm run build && AWS_ACCESS_KEY_ID=test AWS_SECRET_ACCESS_KEY=test AWS_DEFAULT_REGION=us-east-1 AWS_REGION=us-east-1 cdklocal bootstrap aws://000000000000/us-east-1 && AWS_ACCESS_KEY_ID=test AWS_SECRET_ACCESS_KEY=test AWS_DEFAULT_REGION=us-east-1 AWS_REGION=us-east-1 cdklocal deploy --require-approval never",
+    "local:wait": "node -e \"const http=require('http');const url='http://localhost:4566/_localstack/health';const start=Date.now();(function ping(){http.get(url,res=>{let d='';res.on('data',c=>d+=c);res.on('end',()=>{if(res.statusCode===200){console.log('LocalStack healthy');process.exit(0);} });}).on('error',()=>{});if(Date.now()-start>60000){console.error('Timed out waiting for LocalStack');process.exit(1);}setTimeout(ping,1000);})();\"",
+        "local:all": "npm run local:up && npm run local:wait && AWS_ACCESS_KEY_ID=test AWS_SECRET_ACCESS_KEY=test AWS_DEFAULT_REGION=us-east-1 AWS_REGION=us-east-1 npm run build && AWS_ACCESS_KEY_ID=test AWS_SECRET_ACCESS_KEY=test AWS_DEFAULT_REGION=us-east-1 AWS_REGION=us-east-1 cdklocal bootstrap aws://000000000000/us-east-1 && AWS_ACCESS_KEY_ID=test AWS_SECRET_ACCESS_KEY=test AWS_DEFAULT_REGION=us-east-1 AWS_REGION=us-east-1 cdklocal deploy --require-approval never"
 },
   "devDependencies": {
     "aws-cdk": "^2.185.0",
